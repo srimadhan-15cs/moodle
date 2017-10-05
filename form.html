@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Absentees List</title>
+  <link rel="stylesheet" href="jquery-ui.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="jquery-1.12.4.js"></script>
+  <script src="jquery-ui.js"></script>
+
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://jqueryui.com/resources/demos/style.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>--> <!--Since, it clashes with jquery-1.12.4-->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script>
+  function ajaxGet(endpoint, callback){
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET', window.location.hostname + endpoint, true);
+    xhr.onreadystatechange=function(){
+        if(xhr.readyState===XMLHttpRequest.DONE){
+            callback(xhr.responseText);
+        }
+    };
+    xhr.send(null);
+  }
+
+  function ajaxPost(data, endpoint, callback){
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST', window.location.hostname + endpoint, true);
+    xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+    xhr.onreadystatechange=function(){
+        if(xhr.readyState===XMLHttpRequest.DONE){
+            callback(xhr.responseText);
+        }
+    };
+    xhr.send(data);
+  }
+
+  $(document).ready(function(){
+    $("#datepicker").datepicker({
+      changeMonth: true,
+      changeYear: true
+    });
+    ajaxGet('/regulations.php', function (responseText) {
+      var content = '';
+      for(var i = 0; i < responseText.length; i++) {
+        var element = responseText[i];
+        content += '<option>' + element + '</option>';
+      }
+      if(responseText.length == 0){
+        content = 'No data available';
+      }
+      $("#selectReg").html(content);
+    });
+    ajaxGet('/crsCodes.php', function (responseText) {
+      var content = '';
+      for(var i = 0; i < responseText.length; i++) {
+        var element = responseText[i];
+        content += '<option>' + element + '</option>';
+      }
+      if(responseText.length == 0){
+        content = 'No data available';
+      }
+      $("#selectCrsCode").html(content);
+    });
+    $("#getAbsentees").click(function(){
+      var data = {
+        date: $("#datepicker").text(),
+        semester: $("#selectSem").val(),
+        regulation: $("#selectReg").val(),
+        course_code: $("#selectCrsCode").val()
+      };
+      ajaxPost(data, '/absentees.php', function (responseText) {
+        var head = `
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Roll No</th>
+              <th>Reg No</th>
+            </tr>
+          </thead>`;
+        var body = ``;
+        for(var i = 0; i < responseText.length; i++) {
+          var element = JSON.parse(responseText[i]);
+          body += `
+            <tr>
+              <td>` + element.stud_fname + ` ` + element.stud_lname + ` ` + element.stud_initials + `</td>
+              <td>` + element.rollno + `</td>
+              <td>` + element.regno + `</td>
+            </tr>`;
+
+        }
+        if(responseText.length == 0){
+          body = `
+            <tr>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>`;
+        }
+        var content = `<table class="table table-striped">` + head + `<tbody>` + body + `</tbody>` + `</table>`;
+        $("#absentees").html(content);
+      });
+    });
+  });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <p>Date: <input type="text" id="datepicker"></p>
+    <div class="form-group">
+      <label for="selectReg">Select a Regulation:</label>
+      <select class="form-control" id="selectReg">
+      </select>
+
+      <label for="selectSem">Select Semester:</label>
+      <select class="form-control" id="selectSem">
+        <option>1</option>
+        <option>2</option>
+        <option>3</option>
+        <option>4</option>
+        <option>5</option>
+        <option>6</option>
+        <option>7</option>
+        <option>8</option>
+      </select>
+
+      <label for="selectCrsCode">Select a course code:</label>
+      <select class="form-control" id="selectCrsCode">
+      </select>
+
+      <button type="submit" class="btn btn-default" id="getAbsentees">Submit</button>
+    </div>
+  </div>
+
+  <div id="absentees" class="container">
+
+  </div>
+</body>
+</html>
